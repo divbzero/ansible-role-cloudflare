@@ -1,0 +1,19 @@
+cloudflare_api_token: "{{ lookup('file', 'credentials/cloudflare/api_token') }}"
+cloudflare_email: "{{ lookup('file', 'credentials/cloudflare/email') }}"
+cloudflare_origin_ca_key: "{{ lookup('file', 'credentials/cloudflare/origin_ca_key') }}"
+cloudflare_dns_zone: example.com
+cloudflare_dns_records:
+  - type: A
+    value: "{{ ansible_default_ipv4.address }}"
+    proxied: yes
+cloudflare_private_key: /etc/ssl/private/cloudflare-origin-ca.key
+cloudflare_certificate: /etc/ssl/certs/cloudflare-origin-ca.pem
+cloudflare_certificate_hostnames: ["{{ cloudflare_dns_zone|mandatory }}", "{{ '*.' + cloudflare_dns_zone|mandatory }}"]
+cloudflare_certificate_requested_validity: 5475
+cloudflare_certificate_signing_request: /etc/ssl/private/cloudflare-origin-ca.csr
+cloudflare_certificate_common_name: ""
+cloudflare_certificate_country: ""
+cloudflare_certificate_state: ""
+cloudflare_certificate_locality: ""
+cloudflare_certificate_organization: ""
+cloudflare_certificate_organization_unit: ""

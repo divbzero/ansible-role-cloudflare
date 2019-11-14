@@ -1,0 +1,67 @@
+- name: update apt cache
+  apt: update_cache=yes cache_valid_time=3600
+  become: yes
+- name: install python cryptography
+  apt: name=python-cryptography
+  become: yes
+- name: DNS records
+  cloudflare_dns: "{{ {'account_api_token': cloudflare_api_token|mandatory, 'account_email': cloudflare_email|mandatory, 'zone': cloudflare_dns_zone|mandatory}|combine(item) }}"
+  loop: "{{ cloudflare_dns_records|mandatory }}"
+  register: cloudflare_dns
+- name: private key (1/2)
+  stat:
+    path: "{{ cloudflare_private_key }}"
+  become: yes
+  register: result
+- name: private key (2/2)
+  openssl_privatekey:
+    path: "{{ cloudflare_private_key }}"
+  when: not result.stat.exists
+  become: yes
+- name: certificate signing request (1/3)
+  stat:
+    path: "{{ cloudflare_certificate_signing_request }}"
+  become: yes
+  register: result
+- name: certificate signing request (2/3)
+  openssl_csr:
+    privatekey_path: "{{ cloudflare_private_key }}"
+    path: "{{ cloudflare_certificate_signing_request }}"
+    C: "{{ cloudflare_certificate_country }}"
+    ST: "{{ cloudflare_certificate_state }}"
+    L: "{{ cloudflare_certificate_locality }}"
+    O: "{{ cloudflare_certificate_organization }}"
+    OU: "{{ cloudflare_certificate_organization_unit }}"
+  when: not result.stat.exists
+  become: yes
+- name: certificate signing request (3/3)
+  slurp:
+    path: "{{ cloudflare_certificate_signing_request }}"
+  become: yes
+  register: cloudflare_certificate_signing_request_result
+- name: Origin CA certificate (1/3)
+  stat:
+    path: "{{ cloudflare_certificate }}"
+  become: yes
+  register: result
+- name: Origin CA certificate (2/3)
+  uri:
+    url: https://api.cloudflare.com/client/v4/certificates
+    method: POST
+    headers:
+      X-Auth-User-Service-Key: "{{ cloudflare_origin_ca_key|mandatory }}"
+    body:
+      hostnames: "{{ cloudflare_certificate_hostnames }}"
+      request_type: origin-rsa
+      requested_validity: "{{ cloudflare_certificate_requested_validity }}"
+      csr: "{{ cloudflare_certificate_signing_request_result.content|b64decode|trim }}"
+    body_format: json
+  when: not result.stat.exists
+  become: yes
+  register: cloudflare_certificates_create
+- name: Origin CA certificate (3/3)
+  copy:
+    content: "{{ cloudflare_certificates_create.json.result.certificate|replace('\\n', '\n') }}"
+    dest: "{{ cloudflare_certificate }}"
+  when: not result.stat.exists
+  become: yes
