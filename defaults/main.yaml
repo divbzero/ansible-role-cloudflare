@@ -6,11 +6,11 @@ cloudflare_dns_records:
   - type: A
     value: "{{ ansible_default_ipv4.address }}"
     proxied: yes
-cloudflare_private_key: /etc/ssl/private/cloudflare-origin-ca.key
-cloudflare_certificate: /etc/ssl/certs/cloudflare-origin-ca.pem
+cloudflare_private_key: "/etc/ssl/private/{{ cloudflare_dns_zone|mandatory }}.key"
+cloudflare_certificate: "/etc/ssl/certs/{{ cloudflare_dns_zone|mandatory }}.pem"
 cloudflare_certificate_hostnames: ["{{ cloudflare_dns_zone|mandatory }}", "{{ '*.' + cloudflare_dns_zone|mandatory }}"]
 cloudflare_certificate_requested_validity: 5475
-cloudflare_certificate_signing_request: /etc/ssl/private/cloudflare-origin-ca.csr
+cloudflare_certificate_signing_request: "/etc/ssl/private/{{ cloudflare_dns_zone|mandatory }}.csr"
 cloudflare_certificate_common_name: ""
 cloudflare_certificate_country: ""
 cloudflare_certificate_state: ""
